@@ -1,29 +1,29 @@
 import asyncio
+import logging
 
 # from samples.concepts.on_your_data.email_plugin import EmailPlugin
 from semantic_kernel import Kernel
-from semantic_kernel.contents.chat_history import ChatHistory
-from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
-from semantic_kernel.connectors.ai.function_call_behavior import FunctionCallBehavior
 from semantic_kernel.connectors.ai.chat_completion_client_base import ChatCompletionClientBase
+from semantic_kernel.connectors.ai.function_call_behavior import FunctionCallBehavior
+from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 from semantic_kernel.connectors.ai.open_ai.prompt_execution_settings.azure_chat_prompt_execution_settings import (
     AzureChatPromptExecutionSettings,
 )
+from semantic_kernel.contents.chat_history import ChatHistory
+from semantic_kernel.functions import kernel_function
 from semantic_kernel.functions.kernel_arguments import KernelArguments
 
-
-from typing import List
-from semantic_kernel.functions import kernel_function
 
 class EmailPlugin:
     @kernel_function(
         name="send_email",
         description="Sends an email to a recipient."
     )
-    def send_email(self, recipient_email: str|list[str], subject: str, body: str):
+    def send_email(self, recipient_email: str | list[str], subject: str, body: str):
         # Add logic to send an email using the recipient_emails, subject, and body
         # For now, we'll just print out a success message to the console
         print("Email sent!")
+
 
 async def main():
     # Initialize the kernel
@@ -38,8 +38,14 @@ async def main():
         EmailPlugin(),
         plugin_name="Email",
     )
+        # Set the logging level for  semantic_kernel.kernel to DEBUG.
+    logging.basicConfig(
+        format="[%(asctime)s - %(name)s:%(lineno)d - %(levelname)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+    logging.getLogger("kernel").setLevel(logging.DEBUG)
 
-    chat_completion : AzureChatCompletion = kernel.get_service(type=ChatCompletionClientBase)
+    chat_completion: AzureChatCompletion = kernel.get_service(type=ChatCompletionClientBase)
 
     # Enable planning
     execution_settings = AzureChatPromptExecutionSettings(tool_choice="auto")
@@ -67,5 +73,7 @@ async def main():
         history.add_assistant_message(str(result))
 
 # Run the main function
+
+
 if __name__ == "__main__":
     asyncio.run(main())
