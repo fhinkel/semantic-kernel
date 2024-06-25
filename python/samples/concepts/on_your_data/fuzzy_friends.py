@@ -1,6 +1,6 @@
 import asyncio
 
-from samples.concepts.on_your_data.email_plugin import EmailPlugin
+# from samples.concepts.on_your_data.email_plugin import EmailPlugin
 from semantic_kernel import Kernel
 from semantic_kernel.contents.chat_history import ChatHistory
 from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
@@ -10,6 +10,20 @@ from semantic_kernel.connectors.ai.open_ai.prompt_execution_settings.azure_chat_
     AzureChatPromptExecutionSettings,
 )
 from semantic_kernel.functions.kernel_arguments import KernelArguments
+
+
+from typing import List
+from semantic_kernel.functions import kernel_function
+
+class EmailPlugin:
+    @kernel_function(
+        name="send_email",
+        description="Sends an email to a recipient."
+    )
+    def send_email(self, recipient_email: str|list[str], subject: str, body: str):
+        # Add logic to send an email using the recipient_emails, subject, and body
+        # For now, we'll just print out a success message to the console
+        print("Email sent!")
 
 async def main():
     # Initialize the kernel
