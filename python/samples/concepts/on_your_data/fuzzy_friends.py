@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+from samples.concepts.on_your_data.email_plugin import EmailPlugin
 from semantic_kernel import Kernel
 from semantic_kernel.connectors.ai.chat_completion_client_base import ChatCompletionClientBase
 from semantic_kernel.connectors.ai.function_call_behavior import FunctionCallBehavior
@@ -9,7 +10,6 @@ from semantic_kernel.connectors.ai.open_ai.prompt_execution_settings.azure_chat_
     AzureChatPromptExecutionSettings,
 )
 from semantic_kernel.contents.chat_history import ChatHistory
-from semantic_kernel.core_plugins.time_plugin import TimePlugin
 from semantic_kernel.functions.kernel_arguments import KernelArguments
 
 
@@ -34,8 +34,8 @@ async def main():
 
     # Add a plugin (the LightsPlugin class is defined below)
     kernel.add_plugin(
-        TimePlugin(),
-        plugin_name="timePlugin",
+        EmailPlugin(),
+        plugin_name="emailPlugin",
     )
 
     chat_completion: AzureChatCompletion = kernel.get_service(type=ChatCompletionClientBase)
