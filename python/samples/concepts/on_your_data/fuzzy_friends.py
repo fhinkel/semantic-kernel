@@ -1,128 +1,63 @@
-# Copyright (c) Microsoft. All rights reserved.
-
 import asyncio
-import os
-import sys
+import logging
 
 from semantic_kernel import Kernel
-from semantic_kernel.connectors.ai.open_ai import (
-    AzureAISearchDataSource,
-    AzureChatCompletion,
+from semantic_kernel.connectors.ai.chat_completion_client_base import ChatCompletionClientBase
+from semantic_kernel.connectors.ai.function_call_behavior import FunctionCallBehavior
+from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
+from semantic_kernel.connectors.ai.open_ai.prompt_execution_settings.azure_chat_prompt_execution_settings import (
     AzureChatPromptExecutionSettings,
-    ExtraBody,
 )
-from semantic_kernel.connectors.memory.azure_cognitive_search.azure_ai_search_settings import AzureAISearchSettings
-from semantic_kernel.contents import ChatHistory
-from semantic_kernel.functions import KernelArguments, KernelFunction
-
-kernel = Kernel()
-# Depending on the index that you use, you might need to enable the below
-# and adapt it so that it accurately reflects your index.
-
-# azure_ai_search_settings["fieldsMapping"] = {
-#     "titleField": "source_title",
-#     "urlField": "source_url",
-#     "contentFields": ["source_text"],
-#     "filepathField": "source_file",
-# }
+from semantic_kernel.contents.chat_history import ChatHistory
+from semantic_kernel.core_plugins.time_plugin import TimePlugin
+from semantic_kernel.functions.kernel_arguments import KernelArguments
 
 
-current_dir = os.path.abspath('')
-parent_dir = os.path.dirname(current_dir)
-sys.path.append(parent_dir)
-api_key = os.getenv("AZURE_AISEARCH_API_KEY")
+async def main():
+    print("running main")
+    # Initialize the kernel
+    kernel = Kernel()
 
-# Create the data source settings
-azure_ai_search_settings = AzureAISearchSettings(
-    endpoint="https://sckw.search.windows.net", 
-    index_name="ewog-index", 
-    api_key=api_key)
+    # Add Azure OpenAI chat completion
+    kernel.add_service(AzureChatCompletion(
+        # deployment_name="your_models_deployment_name",
+        # api_key="your_api_key",
+        # base_url="your_base_url",
+    ))
 
-az_source = AzureAISearchDataSource.from_azure_ai_search_settings(azure_ai_search_settings=azure_ai_search_settings)
-extra = ExtraBody(data_sources=[az_source])
+    # Set the logging level for  semantic_kernel.kernel to DEBUG.
+    logging.basicConfig(
+        format="[%(asctime)s - %(name)s:%(lineno)d - %(levelname)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+    logging.getLogger("kernel").setLevel(logging.DEBUG)
 
-kernel = Kernel()
-
-kernel.add_service(AzureChatCompletion(service_id="chat", env_file_path=".env"))
-
-chat_function = kernel.add_function(
-    prompt="{{$chat_history}}{{$user_input}}",
-    plugin_name="ChatBot",
-    function_name="Chat",
-)
-
-execution_settings_extra = AzureChatPromptExecutionSettings(
-    service_id="chat",
-    max_tokens=2000,
-    temperature=0.7,
-    top_p=0.8,
-    extra_body=extra,
-)
-
-history = ChatHistory()
-
-history.add_assistant_message("""
-    Hi there, I'm the Fuzzy Friends of Endor customer service 
-    assistant. We love and sell live Ewogs. I'm curteous and helpful.
-""")
-
-arguments = KernelArguments(settings=execution_settings_extra)
-
-
-async def handle_streaming(
-    kernel: Kernel,
-    chat_function: "KernelFunction",
-    arguments: KernelArguments,
-) -> None:
-    response = kernel.invoke_stream(
-        chat_function,
-        return_function_results=False,
-        arguments=arguments,
+    # Add a plugin (the LightsPlugin class is defined below)
+    kernel.add_plugin(
+        TimePlugin(),
+        plugin_name="timePlugin",
     )
 
-    print("Fuzzy Friends customer service:> ", end="")
-    result = ""
-    async for message in response:
-        print(str(message[0]), end="")
-        result += str(message[0])
-    print("\n")
-    history.add_assistant_message(result)
+    chat_completion: AzureChatCompletion = kernel.get_service(type=ChatCompletionClientBase)
 
+    # Enable planning
+    execution_settings = AzureChatPromptExecutionSettings(tool_choice="auto")
+    execution_settings.function_call_behavior = FunctionCallBehavior.EnableFunctions(auto_invoke=True, filters={})
 
-async def chat() -> bool:
-    try:
-        user_input = input("User:> ")
-    except KeyboardInterrupt:
-        print("\n\nExiting chat...")
-        return False
-    except EOFError:
-        print("\n\nExiting chat...")
-        return False
+    # Create a history of the conversation
+    history = ChatHistory()
+    history.add_user_message("Can you help me write an email for my boss?")
 
-    if user_input == "exit":
-        print("\n\nExiting chat...")
-        return False
-    arguments["user_input"] = user_input
-    arguments["chat_history"] = history
-    history.add_user_message(user_input)
+    result = (await chat_completion.get_chat_message_contents(
+        chat_history=history,
+        settings=execution_settings,
+        kernel=kernel,
+        arguments=KernelArguments(),
+    ))[0]
 
-    stream = True
-    if stream:
-        await handle_streaming(kernel, chat_function, arguments=arguments)
-    else:
-        result = await kernel.invoke(chat_function, arguments=arguments)
-        print(f"Fuzzy Friends customer service:> {result}")
-    return True
+    print(result)
 
-
-async def main() -> None:
-    chatting = True
-    print(
-        "Welcome to Fuzzy Friends customer support!\
-        \n  How may I help you?"
-    )
-    while chatting:
-        chatting = await chat()
+# Run the main function
 
 
 if __name__ == "__main__":
