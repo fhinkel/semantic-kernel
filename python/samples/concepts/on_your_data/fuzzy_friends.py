@@ -1,7 +1,8 @@
 # Copyright (c) Microsoft. All rights reserved.
 
 import asyncio
-import logging
+import os
+import sys
 
 from semantic_kernel import Kernel
 from semantic_kernel.connectors.ai.open_ai import (
@@ -10,12 +11,9 @@ from semantic_kernel.connectors.ai.open_ai import (
     AzureChatPromptExecutionSettings,
     ExtraBody,
 )
-from semantic_kernel.contents.streaming_chat_message_content import StreamingChatMessageContent
-from semantic_kernel.functions import KernelFunction
 from semantic_kernel.connectors.memory.azure_cognitive_search.azure_ai_search_settings import AzureAISearchSettings
 from semantic_kernel.contents import ChatHistory
-from semantic_kernel.functions import KernelArguments
-from semantic_kernel.prompt_template import InputVariable, PromptTemplateConfig
+from semantic_kernel.functions import KernelArguments, KernelFunction
 
 kernel = Kernel()
 # Depending on the index that you use, you might need to enable the below
@@ -28,8 +26,6 @@ kernel = Kernel()
 #     "filepathField": "source_file",
 # }
 
-import sys
-import os
 
 current_dir = os.path.abspath('')
 parent_dir = os.path.dirname(current_dir)
@@ -47,7 +43,7 @@ extra = ExtraBody(data_sources=[az_source])
 
 kernel = Kernel()
 
-kernel.add_service(AzureChatCompletion(service_id="chat", env_file_path="../.env"))
+kernel.add_service(AzureChatCompletion(service_id="chat", env_file_path=".env"))
 
 chat_function = kernel.add_function(
     prompt="{{$chat_history}}{{$user_input}}",
@@ -65,7 +61,10 @@ execution_settings_extra = AzureChatPromptExecutionSettings(
 
 history = ChatHistory()
 
-history.add_assistant_message("Hi there, I'm the Fuzzy Friends of Endor customer service assistant. We love and sell live Ewogs. I'm curteous and helpful.")
+history.add_assistant_message("""
+    Hi there, I'm the Fuzzy Friends of Endor customer service 
+    assistant. We love and sell live Ewogs. I'm curteous and helpful.
+""")
 
 arguments = KernelArguments(settings=execution_settings_extra)
 
@@ -128,4 +127,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-
