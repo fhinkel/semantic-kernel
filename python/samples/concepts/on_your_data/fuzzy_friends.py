@@ -9,6 +9,7 @@ from semantic_kernel.connectors.ai.chat_completion_client_base import ChatComple
 from semantic_kernel.connectors.ai.open_ai.prompt_execution_settings.azure_chat_prompt_execution_settings import (
     AzureChatPromptExecutionSettings,
 )
+from semantic_kernel.functions.kernel_arguments import KernelArguments
 
 async def main():
     # Initialize the kernel
@@ -48,8 +49,8 @@ async def main():
         ))[0]
 
         # Print the response
-        print("Assistant > " + result)
-        history.add_assistant_message(result)
+        print("Assistant > " + str(result))
+        history.add_assistant_message(str(result))
 
 # Run the main function
 if __name__ == "__main__":

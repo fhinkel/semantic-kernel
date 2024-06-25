@@ -6,8 +6,8 @@ class EmailPlugin:
         name="send_email",
         description="Sends an email to a recipient."
     )
-    # async def send_email(self, recipient_emails: List[str], subject: str, body: str):
-    async def send_email(self):
+    async def send_email(self, recipient_emails: List[str], subject: str, body: str):
+    # async def send_email(self):
 
         # Add logic to send an email using the recipient_emails, subject, and body
         # For now, we'll just print out a success message to the console
